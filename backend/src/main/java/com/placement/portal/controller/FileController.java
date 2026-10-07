@@ -119,29 +119,59 @@ public class FileController {
     @GetMapping("/files/resumes/{filename:.+}")
     public ResponseEntity<Resource> viewResume(@PathVariable String filename) {
         try {
-            Path filePath = uploadDir.resolve(filename).normalize();
-            Resource resource = new UrlResource(filePath.toUri());
+            String sanitizedFilename = StringUtils.cleanPath(filename);
+            if (sanitizedFilename.contains("..") || sanitizedFilename.contains("/") || sanitizedFilename.contains("\\")) {
+                throw new BadRequestException("Invalid filename format");
+            }
 
+            Path filePath = uploadDir.resolve(sanitizedFilename).normalize();
+            if (!filePath.startsWith(uploadDir) || !Files.exists(filePath) || !Files.isReadable(filePath)) {
+                throw new ResourceNotFoundException("Resume file not found: " + filename);
+            }
+
+            Resource resource = new UrlResource(filePath.toUri());
             if (!resource.exists() || !resource.isReadable()) {
                 throw new ResourceNotFoundException("Resume file not found: " + filename);
             }
 
-            // Determine content type based on extension
-            String contentType = "application/octet-stream";
-            String lower = filename.toLowerCase();
-            if (lower.endsWith(".pdf")) {
-                contentType = "application/pdf";
-            } else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
-                contentType = "image/jpeg";
-            } else if (lower.endsWith(".png")) {
-                contentType = "image/png";
+            // Determine content type
+            String contentType = null;
+            try {
+                contentType = Files.probeContentType(filePath);
+            } catch (IOException ignored) {
             }
 
-            return ResponseEntity.ok()
+            if (contentType == null || contentType.isBlank()) {
+                String lower = sanitizedFilename.toLowerCase();
+                if (lower.endsWith(".pdf")) {
+                    contentType = "application/pdf";
+                } else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+                    contentType = "image/jpeg";
+                } else if (lower.endsWith(".png")) {
+                    contentType = "image/png";
+                } else {
+                    contentType = "application/octet-stream";
+                }
+            }
+
+            long contentLength;
+            try {
+                contentLength = Files.size(filePath);
+            } catch (IOException e) {
+                contentLength = -1;
+            }
+
+            ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                     .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
-                    .body(resource);
+                    .header("X-Content-Type-Options", "nosniff");
+
+            if (contentLength > 0) {
+                builder.contentLength(contentLength);
+            }
+
+            return builder.body(resource);
 
         } catch (MalformedURLException ex) {
             throw new ResourceNotFoundException("Resume file path error: " + filename);

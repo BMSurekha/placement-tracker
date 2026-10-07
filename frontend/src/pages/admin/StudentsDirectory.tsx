@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { EmptyState } from '../../components/EmptyState';
 import { Modal } from '../../components/Modal';
 import { useToast } from '../../context/ToastContext';
+import { getResumeUrl } from '../../utils/fileUtils';
 import { Search, Users, ExternalLink, GraduationCap, Phone, Mail, Eye, AlertCircle } from 'lucide-react';
 
 export const StudentsDirectory: React.FC = () => {
@@ -155,15 +156,26 @@ export const StudentsDirectory: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       {s.resumeUrl ? (
-                        <button
-                          type="button"
-                          onClick={() => setPreviewResume({ url: s.resumeUrl!, studentName: s.fullName })}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg border border-brand-200 transition-colors shadow-2xs"
-                          title="View student's uploaded resume"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-brand-600" />
-                          <span>{s.resumeUrl.toLowerCase().endsWith('.pdf') ? 'View PDF' : 'View Image'}</span>
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewResume({ url: getResumeUrl(s.resumeUrl!), studentName: s.fullName })}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg border border-brand-200 transition-colors shadow-2xs"
+                            title="Preview student's uploaded resume"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-brand-600" />
+                            <span>{s.resumeUrl.toLowerCase().endsWith('.pdf') ? 'View PDF' : 'View Image'}</span>
+                          </button>
+                          <a
+                            href={getResumeUrl(s.resumeUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 text-slate-400 hover:text-brand-600 rounded-md hover:bg-slate-100 transition-colors"
+                            title="Open in new browser tab directly from server"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
                       ) : (
                         <button
                           type="button"
@@ -201,7 +213,7 @@ export const StudentsDirectory: React.FC = () => {
               <a
                 href={previewResume.url}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 font-bold text-brand-700 bg-white border border-brand-300 rounded-lg hover:bg-brand-50 shadow-xs transition-colors self-start sm:self-auto"
               >
                 <ExternalLink className="w-3.5 h-3.5" /> Open in Full Browser Tab

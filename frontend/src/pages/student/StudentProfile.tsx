@@ -4,6 +4,8 @@ import { StudentProfile as IStudentProfile } from '../../types';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+import { Modal } from '../../components/Modal';
+import { getResumeUrl, openResumeInNewTab } from '../../utils/fileUtils';
 import {
   UserCheck,
   Save,
@@ -20,6 +22,7 @@ import {
   FileType,
   Trash2,
   AlertCircle,
+  Eye,
 } from 'lucide-react';
 
 export const StudentProfile: React.FC = () => {
@@ -29,6 +32,7 @@ export const StudentProfile: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadingResume, setUploadingResume] = useState(false);
   const [deletingResume, setDeletingResume] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   const toast = useToast();
   const { setUser } = useAuth();
@@ -389,13 +393,21 @@ export const StudentProfile: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <a
-                      href={profile.resumeUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => setShowPreviewModal(true)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors border border-emerald-300"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" /> View / Preview File
+                      <Eye className="w-3.5 h-3.5" /> View / Preview File
+                    </button>
+                    <a
+                      href={getResumeUrl(profile.resumeUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-lg transition-colors border border-slate-300"
+                      title="Open in new browser tab directly from server"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-500" /> Tab
                     </a>
                     <button
                       type="button"
@@ -492,6 +504,51 @@ export const StudentProfile: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Resume Viewer Modal */}
+      <Modal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        title="Student Resume Preview"
+        subtitle={profile.fullName}
+        maxWidth="max-w-4xl"
+      >
+        {profile.resumeUrl && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+              <span className="text-slate-600 font-mono truncate max-w-sm sm:max-w-md">
+                {getResumeUrl(profile.resumeUrl)}
+              </span>
+              <a
+                href={getResumeUrl(profile.resumeUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 font-bold text-brand-700 bg-white border border-brand-300 rounded-lg hover:bg-brand-50 shadow-xs transition-colors self-start sm:self-auto"
+              >
+                <ExternalLink className="w-3.5 h-3.5" /> Open in Full Browser Tab
+              </a>
+            </div>
+
+            <div className="w-full bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center min-h-[480px]">
+              {profile.resumeUrl.toLowerCase().endsWith('.pdf') ? (
+                <iframe
+                  src={getResumeUrl(profile.resumeUrl)}
+                  className="w-full h-[65vh] border-0"
+                  title="My Resume PDF"
+                />
+              ) : (
+                <div className="p-4 flex items-center justify-center">
+                  <img
+                    src={getResumeUrl(profile.resumeUrl)}
+                    alt="My Resume"
+                    className="max-h-[65vh] max-w-full object-contain rounded-lg shadow-sm"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

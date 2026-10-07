@@ -25,11 +25,41 @@ import { EditDrive } from './pages/admin/EditDrive';
 import { DriveApplicants } from './pages/admin/DriveApplicants';
 import { StudentsDirectory } from './pages/admin/StudentsDirectory';
 
+import { useLocation } from 'react-router-dom';
+import { getResumeUrl } from './utils/fileUtils';
+
 const RootRedirect: React.FC = () => {
   const { isAuthenticated, role } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (role === 'ROLE_OFFICER') return <Navigate to="/admin/dashboard" replace />;
   return <Navigate to="/student/dashboard" replace />;
+};
+
+const ApiFileRedirect: React.FC = () => {
+  const location = useLocation();
+  const targetUrl = getResumeUrl(location.pathname + location.search);
+
+  React.useEffect(() => {
+    if (targetUrl) {
+      window.location.replace(targetUrl);
+    }
+  }, [targetUrl]);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 text-slate-700 p-6 text-center">
+      <div className="w-8 h-8 border-3 border-brand-600 border-t-transparent rounded-full animate-spin mb-3" />
+      <h2 className="text-sm font-bold text-slate-800">Opening document from server...</h2>
+      <p className="text-xs text-slate-500 mt-0.5 mb-3">Redirecting directly to the backend document endpoint</p>
+      {targetUrl && (
+        <a
+          href={targetUrl}
+          className="text-xs font-semibold text-brand-600 hover:underline px-3 py-1.5 bg-white border border-brand-200 rounded-lg shadow-2xs"
+        >
+          Click here if not redirected automatically
+        </a>
+      )}
+    </div>
+  );
 };
 
 export const App: React.FC = () => {
@@ -38,6 +68,10 @@ export const App: React.FC = () => {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
+            {/* Public Backend Document Forwarders (Never treat as frontend dashboards) */}
+            <Route path="/api/files/*" element={<ApiFileRedirect />} />
+            <Route path="/files/resumes/*" element={<ApiFileRedirect />} />
+
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
