@@ -26,3 +26,5 @@ Thumbs.db
 
 # Local database files
 *.sql
+# Uploaded resumes / personal files
+backend/uploads/resumes/
